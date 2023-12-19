@@ -1,0 +1,156 @@
+#!/bin/bash
+
+show_help() {
+    # Display help information
+    echo "Usage: internsctl [OPTIONS] COMMAND [ARGS]..."
+    echo "Custom Linux command for operations."
+    echo ""
+    echo "Options:"
+    echo "  -h, --help       Show this message and exit."
+    echo "  --version        Show version information."
+    echo ""
+    echo "Commands:"
+    echo "  cpu getinfo      Get CPU information."
+    echo "  memory getinfo   Get memory information."
+    echo "  user create      Create a new user."
+    echo "  user list        List all regular users."
+    echo "  user list --sudo-only List users with sudo permissions."
+    echo "  file getinfo     Get information about a file."
+}
+
+show_version() {
+    # Display version information
+    echo "internsctl v0.1.0"
+}
+
+cpu_getinfo() {
+    # Get CPU information
+    lscpu
+}
+
+memory_getinfo() {
+    # Get memory information
+    free
+}
+
+user_create() {
+    # Create a new user
+    username=$1
+    useradd $username
+    passwd $username
+}
+
+user_list() {
+    # List all regular users
+    getent passwd | grep -E '/bin/(bash|sh)$' | cut -d: -f1
+}
+
+user_list_sudo() {
+    # List users with sudo permissions
+    getent passwd | sudo -l | grep -E '/bin/(bash|sh)$' | cut -d: -f1
+}
+
+file_getinfo() {
+    # Get information about a file
+    filename=$1
+    size=$(stat -c%s "$filename")
+    permissions=$(stat -c%a "$filename")
+    owner=$(stat -c%U "$filename")
+    last_modified=$(stat -c%y "$filename")
+
+    echo "File: $filename"
+    echo "Access: $permissions"
+    echo "Size(B): $size"
+    echo "Owner: $owner"
+    echo "Modify: $last_modified"
+}
+
+file_getinfo_options() {
+    # Get specific information about a file based on options
+    filename=$2
+
+    case $1 in
+        --size|-s)
+            stat -c%s "$filename"
+            ;;
+        --permissions|-p)
+            stat -c%a "$filename"
+            ;;
+        --owner|-o)
+            stat -c%U "$filename"
+            ;;
+        --last-modified|-m)
+            stat -c%y "$filename"
+            ;;
+        *)
+            echo "Invalid option: $1"
+            ;;
+    esac
+}
+
+# Main script
+case $1 in
+    cpu)
+        case $2 in
+            getinfo)
+                cpu_getinfo
+                ;;
+            *)
+                show_help
+                ;;
+        esac
+        ;;
+    memory)
+        case $2 in
+            getinfo)
+                memory_getinfo
+                ;;
+            *)
+                show_help
+                ;;
+        esac
+        ;;
+    user)
+        case $2 in
+            create)
+                user_create $3
+                ;;
+            list)
+                if [ "$3" == "--sudo-only" ]; then
+                    user_list_sudo
+                else
+                    user_list
+                fi
+                ;;
+            *)
+                show_help
+                ;;
+        esac
+        ;;
+    file)
+        case $2 in
+            getinfo)
+                if [ -z "$3" ]; then
+                    echo "Error: Missing file name."
+                    show_help
+                elif [ -z "$4" ]; then
+                    file_getinfo "$3"
+                else
+                    file_getinfo_options "$3" "$4"
+                fi
+                ;;
+            *)
+                show_help
+                ;;
+        esac
+        ;;
+    --help|-h)
+        show_help
+        ;;
+    --version)
+        show_version
+        ;;
+    *)
+        show_help
+        ;;
+esac

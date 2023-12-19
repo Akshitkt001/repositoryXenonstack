@@ -1,0 +1,7 @@
+/internsctl
+|-- /docs
+|   |-- internsctl.1     # Manual page
+|-- /src
+|   |-- internsctl       # Bash script
+|-- /tests
+|-- README.md
